@@ -8,11 +8,12 @@ Built twice: Python/FastAPI (main, gets the evals) and n8n (twin).
 ## Architecture
 ```mermaid
 flowchart LR
-  F[Contact form] -->|webhook + signature| API[FastAPI]
+  F[Contact form] -->|webhook + signed timestamp| API[FastAPI]
   G[Gmail poller] --> API
   API --> D{Fingerprint seen?}
-  D -- yes --> X[Skip]
-  D -- no --> E[Extractor: Haiku, escalate to Sonnet if unsure]
+  D -- "handled already" --> X[Skip]
+  D -- "new, or unfinished" --> SV[Save row, reply 202 at once]
+  SV --> E[Worker: Haiku, escalate to Sonnet if unsure]
   E -->|valid card| R{Sensitive category?}
   E -->|invalid after retries| DLQ[(DLQ table)]
   R -- yes --> Q[Approval queue]
@@ -33,7 +34,9 @@ flowchart LR
 | `db.py` | Postgres tables: `messages` (unique fingerprint), `dlq`, `approvals` |
 | `retry.py` | backoff + jitter helper; decides retryable vs permanent errors |
 | `sheets.py`, `slack.py` | outputs, each behind a small interface so tests use fakes |
-| `api.py` | FastAPI webhook endpoint with signature check |
+| `api.py` | FastAPI webhook: verify signature + timestamp, save the message, reply 202 |
+| `pipeline.py` | `process_message()`: runs the steps in order, updates status, skips steps already done |
+| `ports.py` | small interfaces for LLM, Sheets, Slack, with real and fake versions (tests use fakes) |
 | `gmail.py` | polling job (later phase) |
 | `dlq_cli.py` | list and replay DLQ items |
 | `dashboard.py` | Streamlit (later phase) |
@@ -43,9 +46,21 @@ flowchart LR
 `LeadCard`: name, email, company (optional), intent (short text), category
 (`new_lead | support | refund_complaint | spam | other`), priority 1-5, reason (one line),
 confidence 0-1.
-Tables: `messages(id, fingerprint UNIQUE, source, received_at, raw_text, card_json, status)`,
-`dlq(id, message_id, stage, error, attempts, created_at, replayed_at)`,
-`approvals(id, message_id, status, decided_at)`.
+`messages(id, fingerprint UNIQUE, source, received_at, raw_text, card_json, status,
+sheet_written, slack_sent, model_used, tokens_in, tokens_out, cost_usd, prompt_version)`
+`approvals(id, message_id, status, decided_at)`
+`dlq(id, message_id, stage, error, attempts, created_at, replayed_at)`
+
+Statuses (fixed list, no free text):
+- `messages.status`: `received -> extracted -> delivered`, or `waiting_approval`, `rejected`, `failed`
+- `approvals.status`: `pending | approved | rejected`
+- `dlq`: open while `replayed_at` is empty; `stage` is `extract | sheets | slack`
+
+Dedupe rule: on a repeat fingerprint, skip if status is `delivered`, `waiting_approval`,
+`rejected` or `failed`; resume if `received` or `extracted` (an earlier attempt died midway).
+Outputs are idempotent: each Sheet row carries the message id and is checked before writing;
+`slack_sent` is checked before alerting.
+Raw text holds personal data: delete after N days (config, default 90).
 
 ## Prompt-injection stance
 Message text is passed as quoted data inside delimiters. The system prompt says it is never
@@ -56,7 +71,7 @@ an instruction. The output can only be the form (forced tool call), so an inject
 | Phase | Done means |
 |---|---|
 | 2 Core extraction | sample message -> valid LeadCard; garbled reply triggers repair then retry; call visible in Langfuse; unit tests pass with recorded fixtures |
-| 3 Workflow | signed webhook creates a Sheet row; same message twice -> 1 row; Slack down -> retries then DLQ, replay works; integration test with fakes |
+| 3 Workflow | signed webhook saves and returns 202, worker creates one Sheet row; same message twice -> 1 row; crash mid-way then retry -> resumes, no loss, no duplicate row; Slack down -> retries then DLQ, replay works; integration test with fakes |
 | 4 Human loop | refund/complaint goes to approval queue; dashboard shows last 50, approve/reject, DLQ view |
 | 5 n8n twin | same flow in n8n, error workflow, JSON exported, comparison doc |
 | 6 Evals | 200 labeled messages; `make eval` prints metrics; baseline saved |
