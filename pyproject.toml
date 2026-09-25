@@ -1,0 +1,12 @@
+[project]
+name = "p01-ai-lead-triage"
+version = "0.1.0"
+description = "AI lead and inbox triage: LLM extraction, dedupe, Sheets, Slack, DLQ"
+requires-python = ">=3.12"
+dependencies = []
+
+[tool.ruff]
+line-length = 100
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
