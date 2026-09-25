@@ -7,6 +7,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file=".env", extra="ignore")
 
     anthropic_api_key: str = ""
+    database_url: str = "postgresql://p01:p01@localhost:5433/p01"
     cheap_model: str = "anthropic/claude-haiku-4-5-20251001"
     llm_timeout_s: float = 30.0
     max_repairs: int = 2  # extra tries after the first, each told what was wrong
