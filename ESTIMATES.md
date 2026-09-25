@@ -11,9 +11,11 @@ Estimates for A-C are the user's own (given before seeing Claude's).
 | 1.2b | Review PLAN + ADRs | learning | New | .25 | .4 | .75 | 0.42 | 2.0 | 0.83 | 1.07 | 0 | 1.07 | 2.55 | Many good concept questions (webhook, signature, dedupe); Claude then applied fixes |
 | A | LeadCard schema + injection-safe prompt | llm-logic | New | .25 | .5 | .75 | 0.50 | 2.0 | 1.00 | 0.25 | 0.17 | 0.42 | 0.83 | Claude wrote the code; time went on reading and questions about validators and the tag-stripping attack |
 | B | Extractor: LiteLLM, forced tool call, repair-retry, Langfuse tracing | llm-logic | New | .25 | .5 | .75 | 0.50 | 2.0 | 1.00 | 0.40 | 0.22 | 0.62 | 1.23 | Claude wrote the code; Langfuse legacy API was disabled (needed v2 to verify traces); time went on line-by-line reading and concept questions |
-| C | Unit tests with recorded fixtures | testing-evals | New | .25 | .5 | .75 | 0.50 | 2.0 | 1.00 | | | | | |
+| C | Unit tests with recorded fixtures | testing-evals | New | .25 | .5 | .75 | 0.50 | 2.0 | 1.00 | 0.05 | 0.10 | 0.15 | 0.30 | Claude wrote and ran the tests; user time was only reading and quiz |
 
-**Planned total for A-C: 3.0 h (user).**
+**Planned total for A-C: 3.0 h (user). Actual A-C: 1.19 h (0.42 + 0.62 + 0.15).**
+
+Caution: 'Actual' is the user's time. Claude wrote the code in A-C, so these ratios understate a solo build. Do not use them as client multipliers yet.
 
 ## Claude's view (for comparison)
 | Task | O / M / P | PERT | x2.0 |
