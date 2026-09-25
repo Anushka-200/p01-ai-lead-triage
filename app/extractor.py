@@ -95,14 +95,18 @@ def extract_card(text: str, model: str | None = None) -> Extraction:
                 return Extraction(card, model, PROMPT_VERSION, attempt, tokens_in, tokens_out, cost)
             except ValidationError as e:
                 # Keep the error short: field names and what was wrong, nothing else.
-                problems = "; ".join(f"{'.'.join(map(str, x['loc']))}: {x['msg']}" for x in e.errors())
+                problems = "; ".join(
+                    f"{'.'.join(map(str, x['loc']))}: {x['msg']}" for x in e.errors()
+                )
                 last_error = problems if reply.raw else "you did not fill in the record_lead form"
-                messages = base + [{
-                    "role": "user",
-                    "content": (
-                        f"Your previous answer was invalid ({last_error}). "
-                        f"Previous answer: {reply.raw or '(none)'}\n"
-                        "Call record_lead again with every field valid."
-                    ),
-                }]
+                messages = base + [
+                    {
+                        "role": "user",
+                        "content": (
+                            f"Your previous answer was invalid ({last_error}). "
+                            f"Previous answer: {reply.raw or '(none)'}\n"
+                            "Call record_lead again with every field valid."
+                        ),
+                    }
+                ]
     raise ExtractionError(f"invalid after {settings.max_repairs + 1} attempts: {last_error}")

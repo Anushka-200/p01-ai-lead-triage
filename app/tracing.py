@@ -1,4 +1,5 @@
 """Langfuse tracing. If keys are missing, everything quietly becomes a no-op."""
+
 from contextlib import nullcontext
 
 from langfuse import Langfuse
