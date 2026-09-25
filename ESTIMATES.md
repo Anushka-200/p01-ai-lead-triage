@@ -9,7 +9,7 @@ Estimates for A-C are the user's own (given before seeing Claude's).
 | 0.1 | Repo scaffold (done by Claude, user time not logged) | setup | New | .25 | .5 | 1 | 0.54 | 2.0 | 1.08 | - | - | n/a | n/a | Not timed |
 | 0.2 | Anthropic + Langfuse accounts and keys | setup | New | .25 | .5 | 1 | 0.54 | 2.0 | 1.08 | 0.2 | 0.45 | 0.65 | 1.20 | Console screens differed slightly from the guide; extra questions on spend limits |
 | 1.2b | Review PLAN + ADRs | learning | New | .25 | .4 | .75 | 0.42 | 2.0 | 0.83 | 1.07 | 0 | 1.07 | 2.55 | Many good concept questions (webhook, signature, dedupe); Claude then applied fixes |
-| A | LeadCard schema + injection-safe prompt | llm-logic | New | .25 | .5 | .75 | 0.50 | 2.0 | 1.00 | | | | | |
+| A | LeadCard schema + injection-safe prompt | llm-logic | New | .25 | .5 | .75 | 0.50 | 2.0 | 1.00 | 0.25 | 0.17 | 0.42 | 0.83 | Claude wrote the code; time went on reading and questions about validators and the tag-stripping attack |
 | B | Extractor: LiteLLM, forced tool call, repair-retry, Langfuse tracing | llm-logic | New | .25 | .5 | .75 | 0.50 | 2.0 | 1.00 | | | | | |
 | C | Unit tests with recorded fixtures | testing-evals | New | .25 | .5 | .75 | 0.50 | 2.0 | 1.00 | | | | | |
 
