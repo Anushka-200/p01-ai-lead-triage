@@ -12,6 +12,10 @@ Estimates for A-C are the user's own (given before seeing Claude's).
 | A | LeadCard schema + injection-safe prompt | llm-logic | New | .25 | .5 | .75 | 0.50 | 2.0 | 1.00 | 0.25 | 0.17 | 0.42 | 0.83 | Claude wrote the code; time went on reading and questions about validators and the tag-stripping attack |
 | B | Extractor: LiteLLM, forced tool call, repair-retry, Langfuse tracing | llm-logic | New | .25 | .5 | .75 | 0.50 | 2.0 | 1.00 | 0.40 | 0.22 | 0.62 | 1.23 | Claude wrote the code; Langfuse legacy API was disabled (needed v2 to verify traces); time went on line-by-line reading and concept questions |
 | C | Unit tests with recorded fixtures | testing-evals | New | .25 | .5 | .75 | 0.50 | 2.0 | 1.00 | 0.05 | 0.10 | 0.15 | 0.30 | Claude wrote and ran the tests; user time was only reading and quiz |
+| D | Postgres tables + db.py | data | New | - | 0.33 | - | 0.33 | 2.0 | 0.67 | | | | | logged combined with E, F |
+| E | Fingerprint + register_message (skip/resume/new) | data | New | - | 0.33 | - | 0.33 | 2.0 | 0.67 | | | | | logged combined with D, F |
+| F | Tests for D and E | testing-evals | New | - | 0.33 | - | 0.33 | 2.0 | 0.67 | | | | | logged combined with D, E |
+| D+E+F | Phase 3.1 combined (22:39-23:02) | data | New | - | 1.0 | - | 1.00 | 2.0 | 2.00 | 0.10 | 0.28 | 0.38 | 0.38 | Claude wrote code and tests; user gave single-point estimates (no O/P), 20 min each |
 
 **Planned total for A-C: 3.0 h (user). Actual A-C: 1.19 h (0.42 + 0.62 + 0.15).**
 
@@ -29,3 +33,11 @@ Note: B is the riskiest task (four new things at once). Worst case in the user's
 
 ## Overrun rule
 At 150% of a task's planned hours: stop, diagnose (scope / tooling / bigger than expected / wrong direction), then re-scope, re-estimate, cut, or timebox a spike.
+
+## Day 1 summary (Sep 25)
+- Steps done: 1.1, 0.1, 0.2, 1.2, 1.3, A, B, C, 3.1 (D+E+F). All committed locally, nothing pushed.
+- Planned vs actual (user time): learning 1.45 h vs 1.52 h; setup 2.2 h vs 0.65 h; A-C 3.0 h vs 1.19 h; 3.1 2.0 h vs 0.38 h.
+- Lessons: (1) reading-heavy steps run fast, question-heavy steps run slow (1.2b was 2.5x PERT);
+  (2) give O/M/P, not one number, so the worst case carries the risk;
+  (3) where Claude writes the code, user time understates a solo build. Track solo time separately before quoting.
+- Setup risk not yet met: Google Cloud/OAuth and Slack (tomorrow).
