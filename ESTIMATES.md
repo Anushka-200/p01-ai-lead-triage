@@ -17,6 +17,7 @@ Estimates for A-C are the user's own (given before seeing Claude's).
 | F | Tests for D and E | testing-evals | New | - | 0.33 | - | 0.33 | 2.0 | 0.67 | | | | | logged combined with D, E |
 | D+E+F | Phase 3.1 combined (22:39-23:02) | data | New | - | 1.0 | - | 1.00 | 2.0 | 2.00 | 0.10 | 0.28 | 0.38 | 0.38 | Claude wrote code and tests; user gave single-point estimates (no O/P), 20 min each |
 | 3.2 | Google Cloud project, Sheets API, service account, key, test Sheet (Sep 26, 13:22-13:54) | setup | New | 0.25 | 0.5 | 0.75 | 0.50 | 2.0 | 1.00 | 0.15 | 0.38 | 0.53 | 1.07 | Two keys created by mistake; menu path for service accounts differed from the guide; key file left under its download name |
+| 3.3 | Slack workspace + incoming webhook (Sep 26, 14:00-14:10) | setup | New | 0.25 | 0.5 | 0.75 | 0.50 | 2.0 | 1.00 | 0.05 | 0.12 | 0.17 | 0.33 | Simple setup, one URL; the webhook concept was the only question |
 
 **Planned total for A-C: 3.0 h (user). Actual A-C: 1.19 h (0.42 + 0.62 + 0.15).**
 
