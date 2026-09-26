@@ -64,7 +64,6 @@ def process_message(
         call_with_retry(lambda: deliver_to_sheet(conn, msg, sheets), sleep=sleep)
     except GaveUp as e:
         return _fail(conn, message_id, "sheets", e)
-    msg = get_message(conn, message_id)
     try:
         call_with_retry(lambda: deliver_slack_alert(conn, msg, slack), sleep=sleep)
     except GaveUp as e:

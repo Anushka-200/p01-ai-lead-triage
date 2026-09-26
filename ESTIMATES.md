@@ -20,6 +20,7 @@ Estimates for A-C are the user's own (given before seeing Claude's).
 | 3.3 | Slack workspace + incoming webhook (Sep 26, 14:00-14:10) | setup | New | 0.25 | 0.5 | 0.75 | 0.50 | 2.0 | 1.00 | 0.05 | 0.12 | 0.17 | 0.33 | Simple setup, one URL; the webhook concept was the only question |
 | 3.4 | Signed webhook: signing.py, api.py, tests, demo sender (Sep 26, 14:39-15:25) | integration | New | .25 | .33 | .42 | 1.00 | 2.0 | 2.00 | 0.35 | 0.42 | 0.77 | 0.77 | Claude wrote code; user time went on concept questions (API types, decorators, HMAC). Estimate read as 15/20/25 min for each of G, H, I |
 | 3.5 | save_card, Sheets writer, Slack notifier, idempotent delivery, fake-based tests (Sep 26, 17:19-17:42) | integration | New | .25 | .5 | .75 | 2.00 | 2.0 | 4.00 | 0.12 | 0.26 | 0.38 | 0.19 | Claude wrote all code and tests; user time was reading and quiz. Estimate read as 15/30/45 min for each of J, K, L, M |
+| 3.6 | retry.py, pipeline.py worker, DLQ replay CLI, tests (Sep 26, 18:17-18:46) | integration | New | .25 | .33 | .42 | 0.33 | 2.0 | 0.67 | 0.20 | 0.28 | 0.48 | 1.45 | Claude wrote code; user time on reading and concept questions; estimate was 15/20/25 min for N+O+P+Q together (over the 25 min worst case) |
 
 **Planned total for A-C: 3.0 h (user). Actual A-C: 1.19 h (0.42 + 0.62 + 0.15).**
 
