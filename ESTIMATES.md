@@ -21,6 +21,7 @@ Estimates for A-C are the user's own (given before seeing Claude's).
 | 3.4 | Signed webhook: signing.py, api.py, tests, demo sender (Sep 26, 14:39-15:25) | integration | New | .25 | .33 | .42 | 1.00 | 2.0 | 2.00 | 0.35 | 0.42 | 0.77 | 0.77 | Claude wrote code; user time went on concept questions (API types, decorators, HMAC). Estimate read as 15/20/25 min for each of G, H, I |
 | 3.5 | save_card, Sheets writer, Slack notifier, idempotent delivery, fake-based tests (Sep 26, 17:19-17:42) | integration | New | .25 | .5 | .75 | 2.00 | 2.0 | 4.00 | 0.12 | 0.26 | 0.38 | 0.19 | Claude wrote all code and tests; user time was reading and quiz. Estimate read as 15/30/45 min for each of J, K, L, M |
 | 3.6 | retry.py, pipeline.py worker, DLQ replay CLI, tests (Sep 26, 18:17-18:46) | integration | New | .25 | .33 | .42 | 0.33 | 2.0 | 0.67 | 0.20 | 0.28 | 0.48 | 1.45 | Claude wrote code; user time on reading and concept questions; estimate was 15/20/25 min for N+O+P+Q together (over the 25 min worst case) |
+| 3.7 | Wire webhook to worker, live end-to-end run, fix defects found (Sep 26, 18:58-20:36) | integration | New | .25 | .33 | .42 | 0.33 | 2.0 | 0.67 | 0.55 | 1.08 | 1.63 | 4.9 | Live run with real services exposed 3 defects no unit test had: duplicate worker race (needed a claim lock), sender email/name never stored, Sheets append overwriting rows under parallel writes. Also many concept questions (locks, background tasks) |
 
 **Planned total for A-C: 3.0 h (user). Actual A-C: 1.19 h (0.42 + 0.62 + 0.15).**
 
@@ -46,3 +47,4 @@ At 150% of a task's planned hours: stop, diagnose (scope / tooling / bigger than
   (2) give O/M/P, not one number, so the worst case carries the risk;
   (3) where Claude writes the code, user time understates a solo build. Track solo time separately before quoting.
 - Setup risk not yet met: Google Cloud/OAuth and Slack (tomorrow).
+- Lesson (3.7): a live run with real services is where the biggest overrun and the most valuable finds happened (ratio 4.9). Budget a separate 'live run + fix' task of about 1 h for any integration step; unit tests alone don't show race conditions or library defaults.
