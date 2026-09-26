@@ -1,8 +1,10 @@
 from contextlib import nullcontext
 
+import psycopg
 import pytest
 
 from app import extractor
+from app.db import connect, init_db
 from app.extractor import LLMReply
 
 GOOD_CARD = (
@@ -38,3 +40,18 @@ def fake_model(monkeypatch):
         return calls
 
     return install
+
+
+TEST_URL = "postgresql://p01:p01@localhost:5433/p01_test"
+
+
+@pytest.fixture
+def conn():
+    try:
+        c = connect(TEST_URL)
+    except psycopg.OperationalError:
+        pytest.skip("Postgres test database not available (run: docker compose up -d)")
+    init_db(c)
+    c.execute("TRUNCATE dlq, approvals, messages RESTART IDENTITY CASCADE")
+    yield c
+    c.close()

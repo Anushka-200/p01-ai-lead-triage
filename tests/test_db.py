@@ -3,21 +3,7 @@
 import psycopg
 import pytest
 
-from app.db import Action, Status, connect, init_db, register_message
-
-TEST_URL = "postgresql://p01:p01@localhost:5433/p01_test"
-
-
-@pytest.fixture
-def conn():
-    try:
-        c = connect(TEST_URL)
-    except psycopg.OperationalError:
-        pytest.skip("Postgres test database not available (run: docker compose up -d)")
-    init_db(c)
-    c.execute("TRUNCATE dlq, approvals, messages RESTART IDENTITY CASCADE")
-    yield c
-    c.close()
+from app.db import Action, Status, register_message
 
 
 def count(conn) -> int:
