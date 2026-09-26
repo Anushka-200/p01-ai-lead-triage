@@ -1,10 +1,15 @@
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum
+from typing import TYPE_CHECKING
 
 import psycopg
 
 from app.dedupe import fingerprint
 from app.settings import settings
+
+if TYPE_CHECKING:
+    from app.extractor import Extraction
 
 
 class Status(str, Enum):
@@ -99,3 +104,51 @@ def register_message(conn: psycopg.Connection, sender: str, text: str, source: s
     ).fetchone()
     action = Action.SKIP if Status(status) in HANDLED else Action.RESUME
     return Registered(message_id, action)
+
+
+@dataclass
+class Message:
+    id: int
+    source: str
+    received_at: datetime
+    raw_text: str
+    status: Status
+    card_json: dict | None
+    sheet_written: bool
+    slack_sent: bool
+
+
+def get_message(conn: psycopg.Connection, message_id: int) -> Message:
+    row = conn.execute(
+        "SELECT id, source, received_at, raw_text, status, card_json, sheet_written, slack_sent "
+        "FROM messages WHERE id = %s",
+        (message_id,),
+    ).fetchone()
+    if row is None:
+        raise KeyError(f"message {message_id} not found")
+    return Message(row[0], row[1], row[2], row[3], Status(row[4]), row[5], row[6], row[7])
+
+
+def save_card(conn: psycopg.Connection, message_id: int, extraction: "Extraction") -> None:
+    """Store the validated card and the AI usage numbers, and move status to 'extracted'."""
+    conn.execute(
+        "UPDATE messages SET card_json = %s, status = 'extracted', model_used = %s, "
+        "tokens_in = %s, tokens_out = %s, cost_usd = %s, prompt_version = %s WHERE id = %s",
+        (
+            extraction.card.model_dump_json(),
+            extraction.model,
+            extraction.tokens_in,
+            extraction.tokens_out,
+            extraction.cost_usd,
+            extraction.prompt_version,
+            message_id,
+        ),
+    )
+
+
+def mark_sheet_written(conn: psycopg.Connection, message_id: int) -> None:
+    conn.execute("UPDATE messages SET sheet_written = true WHERE id = %s", (message_id,))
+
+
+def mark_slack_sent(conn: psycopg.Connection, message_id: int) -> None:
+    conn.execute("UPDATE messages SET slack_sent = true WHERE id = %s", (message_id,))

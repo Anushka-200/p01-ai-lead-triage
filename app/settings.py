@@ -13,6 +13,10 @@ class Settings(BaseSettings):
     webhook_shared_secret: str = ""
     webhook_max_age_s: int = 300  # reject signed requests older than this
     webhook_max_body_bytes: int = 100_000
+    slack_webhook_url: str = ""
+    google_sheet_id: str = ""
+    google_service_account_file: str = "secrets/google-service-account.json"
+    hot_lead_priority: int = 4  # priority at or above this sends a Slack alert
     max_repairs: int = 2  # extra tries after the first, each told what was wrong
 
     langfuse_public_key: str = ""
