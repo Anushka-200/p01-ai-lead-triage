@@ -97,3 +97,13 @@ def replay(
 
 def open_dlq_ids(conn: psycopg.Connection) -> list[int]:
     return [r[0] for r in list_open_dlq(conn)]
+
+
+def stale_message_ids(conn: psycopg.Connection, older_than_s: int = 120) -> list[int]:
+    """Messages saved but never finished (e.g. the server died mid-way). Worth re-running."""
+    rows = conn.execute(
+        "SELECT id FROM messages WHERE status IN ('received', 'extracted') "
+        "AND received_at < now() - make_interval(secs => %s) ORDER BY id",
+        (older_than_s,),
+    ).fetchall()
+    return [r[0] for r in rows]

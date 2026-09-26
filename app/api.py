@@ -1,13 +1,20 @@
-from collections.abc import Iterator
+import logging
+from collections.abc import Callable, Iterator
 from contextlib import asynccontextmanager
+from functools import lru_cache
 
 import psycopg
-from fastapi import Depends, FastAPI, Header, HTTPException, Request
+from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from app.db import connect, init_db, register_message
+from app.db import Action, connect, init_db, register_message
+from app.pipeline import process_message
 from app.settings import settings
+from app.sheets import GoogleSheets
 from app.signing import verify
+from app.slack import SlackNotifier
+
+log = logging.getLogger("p01")
 
 
 class FormSubmission(BaseModel):
@@ -35,9 +42,33 @@ def get_conn() -> Iterator[psycopg.Connection]:
         conn.close()
 
 
+@lru_cache
+def _outputs() -> tuple[GoogleSheets, SlackNotifier]:
+    return GoogleSheets(), SlackNotifier()  # created once, on first use
+
+
+def get_processor() -> Callable[[int], None]:
+    """The background job for one saved message. Tests replace this with a fake-backed one."""
+
+    def run(message_id: int) -> None:
+        conn = connect()
+        try:
+            sheets, slack = _outputs()
+            process_message(conn, message_id, sheets, slack)
+        except Exception:
+            # Unexpected bug or setup problem. The row stays 'received', so a resend resumes it.
+            log.exception("processing failed for message %s", message_id)
+        finally:
+            conn.close()
+
+    return run
+
+
 @app.post("/webhook", status_code=202)
 async def webhook(
     request: Request,
+    background: BackgroundTasks,
+    process: Callable[[int], None] = Depends(get_processor),
     x_timestamp: str = Header(...),
     x_signature: str = Header(...),
     conn: psycopg.Connection = Depends(get_conn),
@@ -57,7 +88,9 @@ async def webhook(
         raise HTTPException(422, "invalid form data") from e
 
     result = register_message(conn, form.email, form.message, source="form")
-    # Reply at once. Extraction, Sheets and Slack happen later, from the saved row.
+    if result.action in (Action.NEW, Action.RESUME):
+        # Runs after the 202 reply is sent: extraction, Sheets and Slack, from the saved row.
+        background.add_task(process, result.message_id)
     return {"status": "received", "message_id": result.message_id, "action": result.action.value}
 
 
