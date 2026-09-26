@@ -19,6 +19,7 @@ Estimates for A-C are the user's own (given before seeing Claude's).
 | 3.2 | Google Cloud project, Sheets API, service account, key, test Sheet (Sep 26, 13:22-13:54) | setup | New | 0.25 | 0.5 | 0.75 | 0.50 | 2.0 | 1.00 | 0.15 | 0.38 | 0.53 | 1.07 | Two keys created by mistake; menu path for service accounts differed from the guide; key file left under its download name |
 | 3.3 | Slack workspace + incoming webhook (Sep 26, 14:00-14:10) | setup | New | 0.25 | 0.5 | 0.75 | 0.50 | 2.0 | 1.00 | 0.05 | 0.12 | 0.17 | 0.33 | Simple setup, one URL; the webhook concept was the only question |
 | 3.4 | Signed webhook: signing.py, api.py, tests, demo sender (Sep 26, 14:39-15:25) | integration | New | .25 | .33 | .42 | 1.00 | 2.0 | 2.00 | 0.35 | 0.42 | 0.77 | 0.77 | Claude wrote code; user time went on concept questions (API types, decorators, HMAC). Estimate read as 15/20/25 min for each of G, H, I |
+| 3.5 | save_card, Sheets writer, Slack notifier, idempotent delivery, fake-based tests (Sep 26, 17:19-17:42) | integration | New | .25 | .5 | .75 | 2.00 | 2.0 | 4.00 | 0.12 | 0.26 | 0.38 | 0.19 | Claude wrote all code and tests; user time was reading and quiz. Estimate read as 15/30/45 min for each of J, K, L, M |
 
 **Planned total for A-C: 3.0 h (user). Actual A-C: 1.19 h (0.42 + 0.62 + 0.15).**
 
