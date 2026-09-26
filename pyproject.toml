@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "AI lead and inbox triage: LLM extraction, dedupe, Sheets, Slack, DLQ"
 requires-python = ">=3.12"
 dependencies = [
+    "gspread>=6.2.1",
     "langfuse>=4.15.6",
     "litellm>=1.102.1",
     "psycopg[binary]>=3.3.6",
