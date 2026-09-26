@@ -87,7 +87,7 @@ async def webhook(
     except ValueError as e:
         raise HTTPException(422, "invalid form data") from e
 
-    result = register_message(conn, form.email, form.message, source="form")
+    result = register_message(conn, form.email, form.message, source="form", name=form.name)
     if result.action in (Action.NEW, Action.RESUME):
         # Runs after the 202 reply is sent: extraction, Sheets and Slack, from the saved row.
         background.add_task(process, result.message_id)

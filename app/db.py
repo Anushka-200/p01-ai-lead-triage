@@ -79,21 +79,31 @@ CREATE TABLE IF NOT EXISTS dlq (
 """
 
 
+MIGRATIONS = """
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS sender_email TEXT;
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS sender_name TEXT;
+ALTER TABLE messages ADD COLUMN IF NOT EXISTS locked_until TIMESTAMPTZ;
+"""
+
+
 def connect(url: str | None = None) -> psycopg.Connection:
     return psycopg.connect(url or settings.database_url, autocommit=True)
 
 
 def init_db(conn: psycopg.Connection) -> None:
     conn.execute(SCHEMA)
+    conn.execute(MIGRATIONS)
 
 
-def register_message(conn: psycopg.Connection, sender: str, text: str, source: str) -> Registered:
+def register_message(
+    conn: psycopg.Connection, sender: str, text: str, source: str, name: str | None = None
+) -> Registered:
     """Save a new message, or decide what to do about a repeat. The database is the judge."""
     fp = fingerprint(sender, text)
     row = conn.execute(
-        "INSERT INTO messages (fingerprint, source, raw_text) VALUES (%s, %s, %s) "
-        "ON CONFLICT (fingerprint) DO NOTHING RETURNING id",
-        (fp, source, text),
+        "INSERT INTO messages (fingerprint, source, raw_text, sender_email, sender_name) "
+        "VALUES (%s, %s, %s, %s, %s) ON CONFLICT (fingerprint) DO NOTHING RETURNING id",
+        (fp, source, text, sender, name),
     ).fetchone()
     if row:
         return Registered(row[0], Action.NEW)
@@ -116,17 +126,22 @@ class Message:
     card_json: dict | None
     sheet_written: bool
     slack_sent: bool
+    sender_email: str | None
+    sender_name: str | None
 
 
 def get_message(conn: psycopg.Connection, message_id: int) -> Message:
     row = conn.execute(
-        "SELECT id, source, received_at, raw_text, status, card_json, sheet_written, slack_sent "
+        "SELECT id, source, received_at, raw_text, status, card_json, sheet_written, slack_sent, "
+        "sender_email, sender_name "
         "FROM messages WHERE id = %s",
         (message_id,),
     ).fetchone()
     if row is None:
         raise KeyError(f"message {message_id} not found")
-    return Message(row[0], row[1], row[2], row[3], Status(row[4]), row[5], row[6], row[7])
+    return Message(
+        row[0], row[1], row[2], row[3], Status(row[4]), row[5], row[6], row[7], row[8], row[9]
+    )
 
 
 def save_card(conn: psycopg.Connection, message_id: int, extraction: "Extraction") -> None:
@@ -181,3 +196,19 @@ def list_open_dlq(conn: psycopg.Connection) -> list[tuple]:
 
 def mark_replayed(conn: psycopg.Connection, dlq_id: int) -> None:
     conn.execute("UPDATE dlq SET replayed_at = now() WHERE id = %s", (dlq_id,))
+
+
+def claim_message(conn: psycopg.Connection, message_id: int, lease_s: int = 120) -> bool:
+    """Try to mark the message 'mine for the next lease_s seconds'. One statement, so the
+    database lets only one caller win. Returns False if someone else holds an unexpired claim."""
+    row = conn.execute(
+        "UPDATE messages SET locked_until = now() + make_interval(secs => %s) "
+        "WHERE id = %s AND status IN ('received', 'extracted') "
+        "AND (locked_until IS NULL OR locked_until < now()) RETURNING id",
+        (lease_s, message_id),
+    ).fetchone()
+    return row is not None
+
+
+def release_message(conn: psycopg.Connection, message_id: int) -> None:
+    conn.execute("UPDATE messages SET locked_until = NULL WHERE id = %s", (message_id,))
