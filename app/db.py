@@ -152,3 +152,32 @@ def mark_sheet_written(conn: psycopg.Connection, message_id: int) -> None:
 
 def mark_slack_sent(conn: psycopg.Connection, message_id: int) -> None:
     conn.execute("UPDATE messages SET slack_sent = true WHERE id = %s", (message_id,))
+
+
+def set_status(conn: psycopg.Connection, message_id: int, status: Status) -> None:
+    conn.execute("UPDATE messages SET status = %s WHERE id = %s", (status.value, message_id))
+
+
+def create_approval(conn: psycopg.Connection, message_id: int) -> None:
+    conn.execute("INSERT INTO approvals (message_id) VALUES (%s)", (message_id,))
+
+
+def insert_dlq(
+    conn: psycopg.Connection, message_id: int, stage: str, error: str, attempts: int
+) -> None:
+    conn.execute(
+        "INSERT INTO dlq (message_id, stage, error, attempts) VALUES (%s, %s, %s, %s)",
+        (message_id, stage, error[:1000], attempts),
+    )
+
+
+def list_open_dlq(conn: psycopg.Connection) -> list[tuple]:
+    """Items still on the shelf: (id, message_id, stage, error, attempts, created_at)."""
+    return conn.execute(
+        "SELECT id, message_id, stage, error, attempts, created_at FROM dlq "
+        "WHERE replayed_at IS NULL ORDER BY id"
+    ).fetchall()
+
+
+def mark_replayed(conn: psycopg.Connection, dlq_id: int) -> None:
+    conn.execute("UPDATE dlq SET replayed_at = now() WHERE id = %s", (dlq_id,))
