@@ -1,7 +1,14 @@
 """Send signed demo messages to the local webhook. Usage: uv run python scripts/send_demo.py"""
 
 import json
+import sys
 import time
+from pathlib import Path
+
+# Running this file directly (not as `python -m ...`) only puts scripts/ on the import path,
+# not the project root - so `import app...` fails. Add the root here, the same fix as
+# app/dashboard.py, so this always works regardless of how or from where it's run.
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import httpx
 from dotenv import dotenv_values
