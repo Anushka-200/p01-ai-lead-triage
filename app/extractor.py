@@ -9,6 +9,8 @@ from app.settings import settings
 from app.tracing import observation
 
 # The "blank form" we hand the model. It must answer by calling this tool.
+# `cache_control` marks it as safe to cache: it's byte-identical on every single call, so
+# Anthropic can reuse it instead of re-billing full price each time (ADR 007).
 LEAD_TOOL = {
     "type": "function",
     "function": {
@@ -16,6 +18,7 @@ LEAD_TOOL = {
         "description": "Record the lead card for the message.",
         "parameters": LeadCard.model_json_schema(),
     },
+    "cache_control": {"type": "ephemeral"},
 }
 
 
@@ -82,7 +85,14 @@ def _extract_once(text: str, model: str) -> tuple[LeadCard, int, int, float, int
     """One model's full attempt at the card, with its own repair loop. Returns the card plus
     usage totals and the number of attempts it took."""
     base = [
-        {"role": "system", "content": SYSTEM_PROMPT},
+        # A list-of-blocks form (instead of a plain string) is what lets us attach
+        # cache_control: this block is identical on every call, so Anthropic can reuse it.
+        {
+            "role": "system",
+            "content": [
+                {"type": "text", "text": SYSTEM_PROMPT, "cache_control": {"type": "ephemeral"}}
+            ],
+        },
         {"role": "user", "content": build_user_message(text)},
     ]
     messages = base

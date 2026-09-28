@@ -12,3 +12,5 @@ Eval set: `evals/labeled_messages.jsonl` (AI-generated messages, gold labels rev
 | 60 | 96.6% | 0.875 | 0.31 | 3.3% | $2.72 | 2.14s | 3.46s | prompt v3, no routing |
 
 | 60 | 96.7% | 0.878 | 0.32 | 0.0% | $2.91 | 2.13s | 3.55s | prompt v3, 2/60 routed to escalation |
+
+| 60 | 96.7% | 0.878 | 0.28 | 0.0% | $2.63 | 2.06s | 4.12s | prompt v4, 4/60 routed to escalation |

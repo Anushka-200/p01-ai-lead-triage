@@ -44,7 +44,7 @@ def test_tokens_and_cost_are_summed_across_attempts(fake_model):
 def test_result_carries_prompt_version_and_model(fake_model):
     fake_model([reply(GOOD_CARD)])
     result = extract_card("hello", model="anthropic/some-model")
-    assert result.prompt_version == "v3"
+    assert result.prompt_version == "v4"
     assert result.model == "anthropic/some-model"
 
 
