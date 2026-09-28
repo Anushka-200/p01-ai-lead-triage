@@ -9,6 +9,7 @@ from app.db import (
     Status,
     claim_message,
     create_approval,
+    decide_approval,
     get_message,
     insert_dlq,
     list_open_dlq,
@@ -94,6 +95,11 @@ def _run(
         return Status.WAITING_APPROVAL
 
     # 3. Deliver. Each step checks its own "already done" flag, so a retry never repeats it.
+    return _deliver(conn, msg, sheets, slack, sleep)
+
+
+def _deliver(conn, msg, sheets: SheetsPort, slack: SlackPort, sleep) -> Status:
+    message_id = msg.id
     try:
         call_with_retry(lambda: deliver_to_sheet(conn, msg, sheets), sleep=sleep)
     except GaveUp as e:
@@ -102,7 +108,6 @@ def _run(
         call_with_retry(lambda: deliver_slack_alert(conn, msg, slack), sleep=sleep)
     except GaveUp as e:
         return _fail(conn, message_id, "slack", e)
-
     set_status(conn, message_id, Status.DELIVERED)
     return Status.DELIVERED
 
@@ -141,3 +146,30 @@ def stale_message_ids(conn: psycopg.Connection, older_than_s: int = 120) -> list
         (older_than_s,),
     ).fetchall()
     return [r[0] for r in rows]
+
+
+def decide(
+    conn: psycopg.Connection,
+    approval_id: int,
+    approved: bool,
+    sheets: SheetsPort,
+    slack: SlackPort,
+    sleep: Callable[[float], None] = time.sleep,
+) -> Status | None:
+    """Priya clicked Approve or Reject on a held message. Returns the new status, or None if
+    this approval was already decided (e.g. a double click)."""
+    message_id = decide_approval(conn, approval_id, approved)
+    if message_id is None:
+        return None
+    if not approved:
+        set_status(conn, message_id, Status.REJECTED)
+        return Status.REJECTED
+    # Approved: run the normal delivery steps (Sheets, then Slack if hot). The category check
+    # in process_message would hold it again, so we call _deliver directly instead.
+    set_status(conn, message_id, Status.EXTRACTED)
+    if not claim_message(conn, message_id):
+        return get_message(conn, message_id).status
+    try:
+        return _deliver(conn, get_message(conn, message_id), sheets, slack, sleep)
+    finally:
+        release_message(conn, message_id)

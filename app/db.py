@@ -177,6 +177,25 @@ def create_approval(conn: psycopg.Connection, message_id: int) -> None:
     conn.execute("INSERT INTO approvals (message_id) VALUES (%s)", (message_id,))
 
 
+def list_pending_approvals(conn: psycopg.Connection) -> list[tuple]:
+    """Held messages waiting on a human: (approval_id, message_id, raw_text, card_json, received_at)."""
+    return conn.execute(
+        "SELECT a.id, m.id, m.raw_text, m.card_json, m.received_at FROM approvals a "
+        "JOIN messages m ON m.id = a.message_id WHERE a.status = 'pending' ORDER BY a.id"
+    ).fetchall()
+
+
+def decide_approval(conn: psycopg.Connection, approval_id: int, approved: bool) -> int | None:
+    """Record the human's decision. Returns the message id, or None if already decided."""
+    status = "approved" if approved else "rejected"
+    row = conn.execute(
+        "UPDATE approvals SET status = %s, decided_at = now() "
+        "WHERE id = %s AND status = 'pending' RETURNING message_id",
+        (status, approval_id),
+    ).fetchone()
+    return row[0] if row else None
+
+
 def insert_dlq(
     conn: psycopg.Connection, message_id: int, stage: str, error: str, attempts: int
 ) -> None:
