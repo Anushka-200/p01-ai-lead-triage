@@ -231,3 +231,12 @@ def claim_message(conn: psycopg.Connection, message_id: int, lease_s: int = 120)
 
 def release_message(conn: psycopg.Connection, message_id: int) -> None:
     conn.execute("UPDATE messages SET locked_until = NULL WHERE id = %s", (message_id,))
+
+
+def recent_messages(conn: psycopg.Connection, limit: int = 50) -> list[tuple]:
+    """Most recent messages, whatever their status, for the dashboard's main list."""
+    return conn.execute(
+        "SELECT id, status, source, received_at, card_json, sender_email FROM messages "
+        "ORDER BY id DESC LIMIT %s",
+        (limit,),
+    ).fetchall()

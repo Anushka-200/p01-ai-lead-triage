@@ -16,6 +16,7 @@ class Settings(BaseSettings):
     slack_webhook_url: str = ""
     google_sheet_id: str = ""
     google_service_account_file: str = "secrets/google-service-account.json"
+    dashboard_password: str = ""
     hot_lead_priority: int = 4  # priority at or above this sends a Slack alert
     max_repairs: int = 2  # extra tries after the first, each told what was wrong
 
