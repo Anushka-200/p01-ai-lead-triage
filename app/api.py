@@ -53,15 +53,18 @@ def get_processor() -> Callable[[int], None]:
     """The background job for one saved message. Tests replace this with a fake-backed one."""
 
     def run(message_id: int) -> None:
-        conn = connect()
+        conn = None
         try:
+            # connect() is inside the try on purpose: a database blip here must be logged, not
+            # crash the background task. The row stays 'received', so app.sweep picks it up.
+            conn = connect()
             sheets, slack = _outputs()
             process_message(conn, message_id, sheets, slack)
         except Exception:
-            # Unexpected bug or setup problem. The row stays 'received', so a resend resumes it.
             log.exception("processing_failed", extra={"message_id": message_id})
         finally:
-            conn.close()
+            if conn is not None:
+                conn.close()
 
     return run
 

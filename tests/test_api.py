@@ -4,7 +4,7 @@ import time
 import pytest
 from fastapi.testclient import TestClient
 
-from app.api import app, get_conn
+from app.api import app, get_conn, get_processor
 from app.settings import settings
 from app.signing import sign
 
@@ -16,6 +16,11 @@ BODY = json.dumps({"email": "raj@acme.com", "message": "We need a website by nex
 def client(conn, monkeypatch):
     monkeypatch.setattr(settings, "webhook_shared_secret", SECRET)
     app.dependency_overrides[get_conn] = lambda: conn
+    # These tests are about the door (signature, validation, saving). Replace the background
+    # worker too - otherwise every accepted test message starts the REAL worker, which
+    # connects to the real dev database and builds real Sheets/Slack clients. CI caught this:
+    # on a clean machine the dev database doesn't exist, so it failed; locally it "passed".
+    app.dependency_overrides[get_processor] = lambda: lambda message_id: None
     yield TestClient(app)
     app.dependency_overrides.clear()
 
@@ -83,3 +88,19 @@ def test_oversized_body_is_rejected(client, monkeypatch):
 def test_no_secret_configured_rejects_everything(client, monkeypatch):
     monkeypatch.setattr(settings, "webhook_shared_secret", "")
     assert post(client).status_code == 401
+
+
+def test_background_worker_logs_a_database_outage_instead_of_crashing(monkeypatch, caplog):
+    """No `conn` fixture on purpose: this must pass even when Postgres is unreachable."""
+    import psycopg
+
+    from app import api
+
+    def db_down():
+        raise psycopg.OperationalError("connection refused")
+
+    monkeypatch.setattr(api, "connect", db_down)
+    with caplog.at_level("ERROR", logger="p01"):
+        api.get_processor()(42)  # must not raise
+    (record,) = [r for r in caplog.records if r.getMessage() == "processing_failed"]
+    assert record.message_id == 42
