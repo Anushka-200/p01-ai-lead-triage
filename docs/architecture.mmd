@@ -1,0 +1,25 @@
+flowchart LR
+  F[Contact form] -->|signed webhook| API[FastAPI]
+  API -->|202 at once| API
+  API --> D{Fingerprint seen?}
+  D -- handled already --> X[Skip]
+  D -- new or unfinished --> SV[Saved: status=received]
+  SV --> W[Background worker]
+  W --> L{Claim message?}
+  L -- someone else has it --> X
+  L -- claimed --> E[Extractor: Haiku<br/>escalate to Sonnet if unsure]
+  E -->|valid card| R{refund_complaint?}
+  E -->|invalid after retries| DLQ[(DLQ)]
+  R -- yes --> Q[Approval queue]
+  R -- no --> S[Google Sheets]
+  Q -->|approved| S
+  Q -->|rejected| X
+  S --> P{priority >= 4}
+  P -- yes --> SL[Slack alert]
+  S -- write fails after retries --> DLQ
+  SL -- fails after retries --> DLQ
+  W -.traces.-> LF[Langfuse]
+  W -.events.-> LOG[(logs/app.jsonl)]
+  S --> UI[Streamlit dashboard]
+  DLQ --> UI
+  Q --> UI
