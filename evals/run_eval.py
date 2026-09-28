@@ -91,6 +91,7 @@ def main() -> None:
                 "gold_category": item["gold_category"], "pred_category": card.category.value,
                 "gold_priority": item["gold_priority"], "pred_priority": card.priority,
                 "ok": item["gold_category"] == card.category.value and item["gold_priority"] == card.priority,
+                "routed": result.routed,
             }
         )  # fmt: skip
 
@@ -127,14 +128,20 @@ def main() -> None:
                 f"  pred={r['pred_category']}/{r['pred_priority']}"
             )
 
+    routed_count = sum(1 for r in rows if r.get("routed"))
+    from app.extractor import PROMPT_VERSION
+
+    note = f"prompt {PROMPT_VERSION}" + (
+        f", {routed_count}/{n} routed to escalation" if routed_count else ", no routing"
+    )
     with open("docs/benchmarks.md", "a") as f:
         f.write(
             f"\n| {n} | {accuracy:.1%} | {macro_f1(gold_cat, pred_cat):.3f} | "
             f"{statistics.mean(priority_errors):.2f} | {invalid / n:.1%} | "
             f"${statistics.mean(costs) * 1000:.2f} | {percentile(latencies, 50):.2f}s | "
-            f"{percentile(latencies, 95):.2f}s | haiku, prompt v1 baseline |\n"
+            f"{percentile(latencies, 95):.2f}s | {note} |\n"
         )
-    print("\nAppended a row to docs/benchmarks.md")
+    print(f"\nAppended a row to docs/benchmarks.md ({note})")
 
 
 if __name__ == "__main__":

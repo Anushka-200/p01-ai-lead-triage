@@ -9,6 +9,8 @@ class Settings(BaseSettings):
     anthropic_api_key: str = ""
     database_url: str = "postgresql://p01:p01@localhost:5433/p01"
     cheap_model: str = "anthropic/claude-haiku-4-5-20251001"
+    escalation_model: str = "anthropic/claude-sonnet-5"
+    routing_confidence_threshold: float = 0.7  # below this, ask the bigger model too
     llm_timeout_s: float = 30.0
     webhook_shared_secret: str = ""
     webhook_max_age_s: int = 300  # reject signed requests older than this
