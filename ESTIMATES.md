@@ -25,6 +25,8 @@ Estimates for A-C are the user's own (given before seeing Claude's).
 | 3.8 | Approval logic (decide/approve/reject), approvals_cli, tests; live run found a Sheet dedupe/id-reuse gotcha after truncating (Sep 28, 15:11-16:07) | integration | New | .25 | .33 | .42 | 0.33 | 2.0 | 0.67 | 0.42 | 0.51 | 0.93 | 2.79  |
 | 3.9 | Streamlit dashboard: approvals/messages/DLQ tabs, password, wired to decide()/replay() (Sep 28, 16:32-16:51) | integration | New | .25 | .33 | .42 | 0.33 | 2.0 | 0.67 | 0.10 | 0.22 | 0.32 | 0.96 | Missing PYTHONPATH bootstrap for `streamlit run` (different entry point than pytest/uvicorn); fixed by adding sys.path bootstrap in dashboard.py and pytest.ini_options pythonpath |
 
+| — | Explain multi-process vs multi-threaded logging safety (concept only) (Sep 28, 20:50-20:53) | learning | New | .17 | .25 | .33 | 0.25 | 2.0 | 0.50 | 0 | 0.05 | 0.05 | 0.20 | Pure explanation, no code; user asked a clarifying concept question before moving to step 16 |
+
 **Planned total for A-C: 3.0 h (user). Actual A-C: 1.19 h (0.42 + 0.62 + 0.15).**
 
 Caution: 'Actual' is the user's time. Claude wrote the code in A-C, so these ratios understate a solo build. Do not use them as client multipliers yet.
