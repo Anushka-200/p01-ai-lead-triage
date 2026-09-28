@@ -34,3 +34,11 @@ MAE improved 40% (0.47 -> 0.28), company hallucination eliminated (6/60 -> 0/60)
 brief assumed. A real 40%+ cost reduction would need a lever we haven't tried: Batch API for
 non-urgent backlog processing (still in the backlog), which trades latency for a documented
 Anthropic discount and doesn't fight the same threshold problem caching does.
+
+**Update: Batch API scoped out of v1.** Batch mode only makes sense for non-urgent, already-
+past-the-fact work (bulk historical reprocessing when onboarding a client, or catching up a
+backlog after an outage) - never for the live inbox, since priority is only known *after* the
+AI reads a message, so there's no way to decide in advance which live messages are "safe" to
+delay. Building it wouldn't demonstrate anything the live path doesn't already prove. Left as
+a documented "what I'd do next" item rather than built, since this project's live-triage story
+doesn't need it to be credible.
