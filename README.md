@@ -119,6 +119,7 @@ uv run python -m evals.run_eval               # re-run the eval, appends a bench
 - **IDs must never be reset once downstream systems hold data.** Google Sheets' own dedupe key
   is the message id; a database `TRUNCATE` that restarts the id sequence will silently skip
   writing a row whose id was already used by old Sheet data (found live during testing).
+- **Docker's logs/ bind mount was removed on purpose.** The container runs as root, so a bind-mounted logs/ folder ends up root-owned on the host - a local (non-Docker) `uv run` can then no longer write to it. Found live while testing; the container keeps its own internal logs for v1 instead.
 - **The Sheets write lock only works within one process.** Multiple server instances would need
   per-process log files/a central log collector and a different Sheets-write coordination
   mechanism than an in-process `threading.Lock`.

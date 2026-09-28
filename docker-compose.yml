@@ -10,7 +10,10 @@ services:
       - "8000:8000"
     volumes:
       - ./secrets:/app/secrets:ro
-      - ./logs:/app/logs
+      # logs/ is intentionally NOT bind-mounted: the container runs as root, so it would create
+      # root-owned files on the host that a local (non-Docker) `uv run` can no longer write to
+      # (hit this for real while testing - see README limitations). The container's own
+      # internal logs are fine for v1; they're lost when the container is removed.
 
   postgres:
     image: postgres:16
