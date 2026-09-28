@@ -1,0 +1,68 @@
+name: CI
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:  # lets you trigger eval-smoke-test manually from the Actions tab
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+
+    # A real Postgres, matching tests/conftest.py's TEST_URL, so the DB-backed tests
+    # (dedupe, claim locking, approvals, delivery, ...) actually run in CI instead of
+    # silently skipping.
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: p01
+          POSTGRES_PASSWORD: p01
+          POSTGRES_DB: p01_test
+        ports:
+          - 5433:5432
+        options: >-
+          --health-cmd "pg_isready -U p01"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.9.7"
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Lint (ruff)
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Run tests
+        # No real API keys here on purpose: every test uses fakes/fixtures for the
+        # LLM, Sheets and Slack (see tests/fakes.py) - nothing here spends money.
+        env:
+          ANTHROPIC_API_KEY: "test-key-not-used"
+        run: PYTHONPATH=. uv run pytest -q
+
+  # A real eval run costs a small amount of API credit and needs a secret key, so it's
+  # separate from the free lint-and-test job above and only runs when explicitly requested,
+  # not on every push. Add ANTHROPIC_API_KEY as a repo secret to enable it.
+  eval-smoke-test:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'workflow_dispatch'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v3
+        with:
+          version: "0.9.7"
+      - run: uv sync
+      - name: Run eval on the full labeled set (~$0.15)
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: PYTHONPATH=. uv run python -m evals.run_eval

@@ -1,4 +1,17 @@
 services:
+  app:
+    build: .
+    depends_on:
+      - postgres
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://p01:p01@postgres:5432/p01
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./secrets:/app/secrets:ro
+      - ./logs:/app/logs
+
   postgres:
     image: postgres:16
     environment:
