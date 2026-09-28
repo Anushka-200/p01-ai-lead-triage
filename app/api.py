@@ -8,12 +8,14 @@ from fastapi import BackgroundTasks, Depends, FastAPI, Header, HTTPException, Re
 from pydantic import BaseModel, Field
 
 from app.db import Action, connect, init_db, register_message
+from app.logging_setup import configure_logging, log_event
 from app.pipeline import process_message
 from app.settings import settings
 from app.sheets import GoogleSheets
 from app.signing import verify
 from app.slack import SlackNotifier
 
+configure_logging()
 log = logging.getLogger("p01")
 
 
@@ -57,7 +59,7 @@ def get_processor() -> Callable[[int], None]:
             process_message(conn, message_id, sheets, slack)
         except Exception:
             # Unexpected bug or setup problem. The row stays 'received', so a resend resumes it.
-            log.exception("processing failed for message %s", message_id)
+            log.exception("processing_failed", extra={"message_id": message_id})
         finally:
             conn.close()
 
@@ -75,19 +77,31 @@ async def webhook(
 ):
     body = await request.body()
     if len(body) > settings.webhook_max_body_bytes:
+        log_event(log, logging.WARNING, "body_too_large", size=len(body))
         raise HTTPException(413, "body too large")
     if not verify(
         settings.webhook_shared_secret, x_timestamp, body, x_signature, settings.webhook_max_age_s
     ):
-        # One vague message on purpose: don't tell an attacker which check failed.
+        # One vague message to the CALLER on purpose (don't reveal which check failed), but we
+        # log the real reason ourselves - this is exactly the "who's trying to get in" signal
+        # the database alone can't show, since a rejected request is never saved as a message.
+        log_event(log, logging.WARNING, "signature_rejected", timestamp=x_timestamp)
         raise HTTPException(401, "invalid signature")
 
     try:
         form = FormSubmission.model_validate_json(body)
     except ValueError as e:
+        log_event(log, logging.WARNING, "invalid_form_data", error=str(e)[:200])
         raise HTTPException(422, "invalid form data") from e
 
     result = register_message(conn, form.email, form.message, source="form", name=form.name)
+    log_event(
+        log,
+        logging.INFO,
+        "message_registered",
+        message_id=result.message_id,
+        action=result.action.value,
+    )
     if result.action in (Action.NEW, Action.RESUME):
         # Runs after the 202 reply is sent: extraction, Sheets and Slack, from the saved row.
         background.add_task(process, result.message_id)

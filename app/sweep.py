@@ -4,11 +4,13 @@ uv run python -m app.sweep
 """
 
 from app.db import connect
+from app.logging_setup import configure_logging
 from app.pipeline import process_message, stale_message_ids
 from app.sheets import GoogleSheets
 from app.slack import SlackNotifier
 
 if __name__ == "__main__":
+    configure_logging()
     conn = connect()
     ids = stale_message_ids(conn)
     print(f"{len(ids)} unfinished message(s)")

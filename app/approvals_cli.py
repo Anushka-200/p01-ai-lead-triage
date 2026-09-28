@@ -9,12 +9,14 @@ import argparse
 import json
 
 from app.db import connect, list_pending_approvals
+from app.logging_setup import configure_logging
 from app.pipeline import decide
 from app.sheets import GoogleSheets
 from app.slack import SlackNotifier
 
 
 def main() -> None:
+    configure_logging()
     parser = argparse.ArgumentParser(description="Approve or reject held messages")
     sub = parser.add_subparsers(dest="cmd", required=True)
     sub.add_parser("list", help="show messages waiting for a decision")

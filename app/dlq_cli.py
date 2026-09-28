@@ -8,12 +8,14 @@ uv run python -m app.dlq_cli replay --all
 import argparse
 
 from app.db import connect, list_open_dlq
+from app.logging_setup import configure_logging
 from app.pipeline import open_dlq_ids, replay
 from app.sheets import GoogleSheets
 from app.slack import SlackNotifier
 
 
 def main() -> None:
+    configure_logging()
     parser = argparse.ArgumentParser(description="Dead-letter queue tools")
     sub = parser.add_subparsers(dest="cmd", required=True)
     sub.add_parser("list", help="show items still waiting")

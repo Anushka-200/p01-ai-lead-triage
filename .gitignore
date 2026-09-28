@@ -9,3 +9,4 @@ credentials*.json
 service-account*.json
 *.log
 secrets/
+logs/

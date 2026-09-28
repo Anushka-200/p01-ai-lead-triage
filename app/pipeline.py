@@ -1,5 +1,6 @@
 """The worker: takes one saved message all the way to Sheets/Slack, safely repeatable."""
 
+import logging
 import time
 from collections.abc import Callable
 
@@ -20,9 +21,12 @@ from app.db import (
 )
 from app.delivery import card_of, deliver_slack_alert, deliver_to_sheet
 from app.extractor import Extraction, extract_card
+from app.logging_setup import log_event
 from app.ports import SheetsPort, SlackPort
 from app.retry import GaveUp, call_with_retry
 from app.schemas import Category, LeadCard
+
+log = logging.getLogger("p01.pipeline")
 
 # Nothing more for the worker to do with a message in these states.
 _STOP = {Status.DELIVERED, Status.REJECTED, Status.WAITING_APPROVAL, Status.FAILED}
@@ -32,6 +36,8 @@ def _fail(conn: psycopg.Connection, message_id: int, stage: str, err: GaveUp) ->
     """Park the message on the DLQ shelf with the reason, and never lose it."""
     insert_dlq(conn, message_id, stage, str(err), err.attempts)
     set_status(conn, message_id, Status.FAILED)
+    log_event(log, logging.ERROR, "message_failed", message_id=message_id, stage=stage,
+              attempts=err.attempts, error=str(err))  # fmt: skip
     return Status.FAILED
 
 
@@ -61,6 +67,7 @@ def process_message(
     if msg.status in _STOP:
         return msg.status
     if not claim_message(conn, message_id):  # another worker is on it right now
+        log_event(log, logging.INFO, "claim_missed", message_id=message_id)
         return msg.status
     try:
         return _run(conn, msg, sheets, slack, extract, sleep)
@@ -87,11 +94,15 @@ def _run(
         extraction.card = fill_from_form(extraction.card, msg.sender_email, msg.sender_name)
         save_card(conn, message_id, extraction)
         msg = get_message(conn, message_id)
+        log_event(log, logging.INFO, "message_extracted", message_id=message_id,
+                  category=extraction.card.category.value, priority=extraction.card.priority,
+                  routed=extraction.routed, cost_usd=extraction.cost_usd)  # fmt: skip
 
     # 2. Sensitive messages wait for a human. Nothing is written or sent yet.
     if card_of(msg).category is Category.REFUND_COMPLAINT:
         create_approval(conn, message_id)
         set_status(conn, message_id, Status.WAITING_APPROVAL)
+        log_event(log, logging.INFO, "message_held_for_approval", message_id=message_id)
         return Status.WAITING_APPROVAL
 
     # 3. Deliver. Each step checks its own "already done" flag, so a retry never repeats it.
@@ -109,6 +120,7 @@ def _deliver(conn, msg, sheets: SheetsPort, slack: SlackPort, sleep) -> Status:
     except GaveUp as e:
         return _fail(conn, message_id, "slack", e)
     set_status(conn, message_id, Status.DELIVERED)
+    log_event(log, logging.INFO, "message_delivered", message_id=message_id)
     return Status.DELIVERED
 
 
@@ -131,6 +143,9 @@ def replay(
     set_status(conn, message_id, Status.EXTRACTED if msg.card_json else Status.RECEIVED)
     result = process_message(conn, message_id, sheets, slack, extract, sleep)
     mark_replayed(conn, dlq_id)
+    log_event(
+        log, logging.INFO, "dlq_replayed", dlq_id=dlq_id, message_id=message_id, result=result.value
+    )
     return result
 
 
@@ -160,7 +175,13 @@ def decide(
     this approval was already decided (e.g. a double click)."""
     message_id = decide_approval(conn, approval_id, approved)
     if message_id is None:
+        log_event(log, logging.WARNING, "approval_already_decided", approval_id=approval_id)
         return None
+    # An audit trail of human decisions - who approved/rejected what, and when - is data the
+    # database's `approvals` table already has via decided_at, but logs put it in the same
+    # timeline as everything else that happened to this message.
+    log_event(log, logging.INFO, "approval_decided", approval_id=approval_id,
+              message_id=message_id, approved=approved)  # fmt: skip
     if not approved:
         set_status(conn, message_id, Status.REJECTED)
         return Status.REJECTED
