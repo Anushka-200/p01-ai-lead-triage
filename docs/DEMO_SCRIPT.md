@@ -1,5 +1,51 @@
 # Demo script (3 minutes)
 
+## How to run the demo, step by step (happy path)
+
+Every new terminal opens in your home folder, so each one starts with the `cd` line. The setup
+commands in Terminal 1 run **once**, not in every terminal.
+
+**Terminal 1: setup, then the server**
+```bash
+cd ~/portfolio/p01-ai-lead-triage
+docker compose up -d postgres       # start the database (once)
+make reset-demo                     # clear old demo data: database AND Sheet together (once per run)
+uv run uvicorn app.api:app --port 8000
+```
+Leave it running. Its log lines show each message being processed.
+
+**Terminal 2: the dashboard**
+```bash
+cd ~/portfolio/p01-ai-lead-triage
+uv run streamlit run app/dashboard.py
+```
+Open http://localhost:8501 and enter `DASHBOARD_PASSWORD` from `.env`.
+
+**Terminal 3: send the demo messages**
+```bash
+cd ~/portfolio/p01-ai-lead-triage
+uv run python scripts/send_demo.py
+```
+
+**What to check**
+| # | Message | Expected |
+|---|---|---|
+| 1 | Raj, hot lead | Sheet row + Slack alert within a few seconds |
+| 2 | Raj again (duplicate) | Still only one Raj row, no second alert |
+| 3 | Sam, brochure question | Sheet row, no Slack alert (priority below 4) |
+| 4 | Meera, angry refund | Not in the Sheet yet. Waiting in the dashboard's **Approvals** tab. Click **Approve**: Sheet row + Slack alert |
+| 5 | Prompt-injection spam | Sheet row as `spam`, priority 1. The injection didn't work |
+| 6 | Forged signature | `401`, nothing saved |
+
+**Running it again:** stop the server (Ctrl+C in Terminal 1), run `make reset-demo`, then start the
+server again. Without the reset, Raj counts as a duplicate of the last run and gets skipped.
+
+**Finished:** Ctrl+C in Terminals 1 and 2.
+
+---
+
+The sections below are the full 3-minute recorded version, with what to say at each step.
+
 Recording checklist before you start: `docker compose up -d postgres`, then `make reset-demo`
 (clears the database AND the Sheet together), `.env` has real keys. Run `make reset-demo` again
 between demo runs, or the second run treats Raj as a duplicate.
