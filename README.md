@@ -106,7 +106,7 @@ git clone <this repo> && cd p01-ai-lead-triage
 cp .env.example .env   # fill in: Anthropic key, Langfuse keys, webhook secret, Google/Slack config
 docker compose up -d   # Postgres
 uv sync
-uv run pytest -q       # 135 tests
+uv run pytest -q       # 136 tests
 
 uv run uvicorn app.api:app --port 8000        # the webhook + worker
 uv run streamlit run app/dashboard.py         # approvals / messages / DLQ, password from .env
