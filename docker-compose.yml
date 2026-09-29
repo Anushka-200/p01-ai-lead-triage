@@ -25,5 +25,22 @@ services:
       - "5433:5432"   # 5433 on the host so it never clashes with a local Postgres
     volumes:
       - pgdata:/var/lib/postgresql/data
+  # The n8n twin of the Python pipeline (docs/n8n-vs-python.md). Secrets come from .env as
+  # environment variables, so the exported workflow JSON only holds {{$env.NAME}} references.
+  n8n:
+    image: docker.n8n.io/n8nio/n8n:latest
+    env_file: .env
+    environment:
+      GENERIC_TIMEZONE: Asia/Kolkata
+      N8N_BLOCK_ENV_ACCESS_IN_NODE: "false"   # let expressions read {{$env.X}} (local dev only)
+      NODE_FUNCTION_ALLOW_BUILTIN: crypto     # the Code node needs crypto for HMAC + hashing
+      N8N_DIAGNOSTICS_ENABLED: "false"
+    ports:
+      - "5678:5678"
+    volumes:
+      - n8n_data:/home/node/.n8n
+      - ./n8n:/files                          # workflow JSON import/export folder
+
 volumes:
   pgdata:
+  n8n_data:

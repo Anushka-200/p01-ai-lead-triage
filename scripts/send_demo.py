@@ -21,7 +21,11 @@ from app.signing import sign
 
 env = dotenv_values(".env")
 SECRET = env["WEBHOOK_SHARED_SECRET"]
-URL = "http://localhost:8000/webhook"
+URL = (
+    sys.argv[sys.argv.index("--url") + 1]
+    if "--url" in sys.argv
+    else "http://localhost:8000/webhook"
+)
 
 
 def body(name, email, message):
@@ -32,7 +36,11 @@ def send(label, payload, signature=None):
     ts = str(int(time.time()))
     sig = signature or sign(SECRET, ts, payload)
     r = httpx.post(URL, content=payload, headers={"X-Timestamp": ts, "X-Signature": sig})
-    print(f"{label:34} -> {r.status_code} {r.json()}")
+    try:
+        reply = r.json()
+    except ValueError:  # n8n can answer with plain text, e.g. when the test URL isn't listening
+        reply = r.text[:200]
+    print(f"{label:34} -> {r.status_code} {reply}")
 
 
 def demo_batch() -> None:
