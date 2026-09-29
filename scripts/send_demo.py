@@ -2,6 +2,9 @@
 
 uv run python scripts/send_demo.py              # the 6-request demo batch
 uv run python scripts/send_demo.py --hot-lead   # one new hot lead (for the failure demo)
+uv run python scripts/send_demo.py --complaint  # one new refund complaint
+  --fresh   add a unique reference, so dedupe never skips it (for repeated testing)
+  --url U   send somewhere else, e.g. http://localhost:5678/webhook-test/lead-triage (n8n)
 """
 
 import json
@@ -75,6 +78,11 @@ def demo_batch() -> None:
     send("6. forged signature", hot, signature="0" * 64)
 
 
+# --fresh: a unique reference makes the fingerprint differ every run, so dedupe (Python's
+# database or n8n's Skip repeats node) never drops a test message as a repeat.
+REF = f" (ref {int(time.time())})" if "--fresh" in sys.argv else ""
+
+
 def hot_lead() -> None:
     # A different sender and text from the batch, so it's never a duplicate of Raj - a resent
     # Raj would be skipped (already delivered) and the failure demo would show nothing.
@@ -84,10 +92,27 @@ def hot_lead() -> None:
             "Neha Kapoor",
             "neha@brightline.studio",
             "Hi, Neha from Brightline Studio. We're launching a product on the 15th and need a "
-            "campaign plan urgently - budget about $8k. Free for a call tomorrow?",
+            "campaign plan urgently - budget about $8k. Free for a call tomorrow?" + REF,
+        ),
+    )
+
+
+def complaint() -> None:
+    send(
+        "new refund complaint",
+        body(
+            "Arjun Rao",
+            "arjun@quickmart.in",
+            "I cancelled three weeks ago and I'm still being charged. I want a full refund "
+            "immediately or I'm disputing it with my bank." + REF,
         ),
     )
 
 
 if __name__ == "__main__":
-    hot_lead() if "--hot-lead" in sys.argv else demo_batch()
+    if "--hot-lead" in sys.argv:
+        hot_lead()
+    elif "--complaint" in sys.argv:
+        complaint()
+    else:
+        demo_batch()

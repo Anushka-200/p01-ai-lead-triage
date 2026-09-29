@@ -1,0 +1,157 @@
+{
+  "id": "UtHVZR9zdoeYzwzG",
+  "name": "P01 n8n error alerts",
+  "nodes": [
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.errorTrigger",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "id": "a216a8c4-04a7-4bb2-8690-665bec7e17e8",
+      "name": "Error Trigger"
+    },
+    {
+      "parameters": {
+        "authentication": "serviceAccount",
+        "operation": "append",
+        "documentId": {
+          "__rl": true,
+          "value": "={{ $env.GOOGLE_SHEET_ID }}",
+          "mode": "id"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "n8n_dlq",
+          "mode": "name"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "failed_at": "={{ $now.toISO() }}",
+            "node": "={{ $json.execution.lastNodeExecuted }}",
+            "error": "={{ $json.execution.error.message }}",
+            "execution_id": "={{ $json.execution.id }}"
+          },
+          "matchingColumns": [],
+          "schema": [
+            {
+              "id": "failed_at",
+              "displayName": "failed_at",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "node",
+              "displayName": "node",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "error",
+              "displayName": "error",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "execution_id",
+              "displayName": "execution_id",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        224,
+        0
+      ],
+      "id": "5f44eb9d-3cb4-4995-8bce-782e42a5f2d8",
+      "name": "DLQ row",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000,
+      "credentials": {
+        "googleApi": {
+          "id": "w6OIEgyGAd3ziu4u",
+          "name": "P01 Google robot"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "={{ $env.SLACK_WEBHOOK_URL }}",
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "text",
+              "value": "=:warning: n8n run failed at node *{{ $('Error Trigger').item.json.execution.lastNodeExecuted }}*: {{ $('Error Trigger').item.json.execution.error.message }} (execution {{ $('Error Trigger').item.json.execution.id }})"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.5,
+      "position": [
+        448,
+        0
+      ],
+      "id": "d797397d-2e80-46dc-a140-068f20ea64f6",
+      "name": "Slack warning",
+      "retryOnFail": true,
+      "waitBetweenTries": 2000
+    }
+  ],
+  "connections": {
+    "Error Trigger": {
+      "main": [
+        [
+          {
+            "node": "DLQ row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "DLQ row": {
+      "main": [
+        [
+          {
+            "node": "Slack warning",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1",
+    "binaryMode": "separate"
+  },
+  "pinData": {},
+  "tags": [],
+  "active": false
+}
