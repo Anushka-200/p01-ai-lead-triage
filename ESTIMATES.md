@@ -22,10 +22,22 @@ Estimates for A-C are the user's own (given before seeing Claude's).
 | 3.5 | save_card, Sheets writer, Slack notifier, idempotent delivery, fake-based tests (Sep 26, 17:19-17:42) | integration | New | .25 | .5 | .75 | 2.00 | 2.0 | 4.00 | 0.12 | 0.26 | 0.38 | 0.19 | Claude wrote all code and tests; user time was reading and quiz. Estimate read as 15/30/45 min for each of J, K, L, M |
 | 3.6 | retry.py, pipeline.py worker, DLQ replay CLI, tests (Sep 26, 18:17-18:46) | integration | New | .25 | .33 | .42 | 0.33 | 2.0 | 0.67 | 0.20 | 0.28 | 0.48 | 1.45 | Claude wrote code; user time on reading and concept questions; estimate was 15/20/25 min for N+O+P+Q together (over the 25 min worst case) |
 | 3.7 | Wire webhook to worker, live end-to-end run, fix defects found (Sep 26, 18:58-20:36) | integration | New | .25 | .33 | .42 | 0.33 | 2.0 | 0.67 | 0.55 | 1.08 | 1.63 | 4.9 | Live run with real services exposed 3 defects no unit test had: duplicate worker race (needed a claim lock), sender email/name never stored, Sheets append overwriting rows under parallel writes. Also many concept questions (locks, background tasks) |
-| 3.8 | Approval logic (decide/approve/reject), approvals_cli, tests; live run found a Sheet dedupe/id-reuse gotcha after truncating (Sep 28, 15:11-16:07) | integration | New | .25 | .33 | .42 | 0.33 | 2.0 | 0.67 | 0.42 | 0.51 | 0.93 | 2.79  |
+| 3.8 | Approval logic (decide/approve/reject), approvals_cli, tests; live run found a Sheet dedupe/id-reuse gotcha after truncating (Sep 28, 15:11-16:07) | integration | New | .25 | .33 | .42 | 0.33 | 2.0 | 0.67 | 0.42 | 0.51 | 0.93 | 2.79 | Live run found the id-reuse gotcha: after TRUNCATE the ids restarted, and the Sheet's own dedupe skipped Meera's row |
 | 3.9 | Streamlit dashboard: approvals/messages/DLQ tabs, password, wired to decide()/replay() (Sep 28, 16:32-16:51) | integration | New | .25 | .33 | .42 | 0.33 | 2.0 | 0.67 | 0.10 | 0.22 | 0.32 | 0.96 | Missing PYTHONPATH bootstrap for `streamlit run` (different entry point than pytest/uvicorn); fixed by adding sys.path bootstrap in dashboard.py and pytest.ini_options pythonpath |
-
 | — | Explain multi-process vs multi-threaded logging safety (concept only) (Sep 28, 20:50-20:53) | learning | New | .17 | .25 | .33 | 0.25 | 2.0 | 0.50 | 0 | 0.05 | 0.05 | 0.20 | Pure explanation, no code; user asked a clarifying concept question before moving to step 16 |
+| 3.10 | Evals: 60 labeled messages, run_eval.py, gold-label fix (Sep 28, 17:12-?) | testing-evals | New | .25 | .33 | .42 | 0.33 | 2.0 | 0.67 | - | - | ≤0.77 | ≤2.3 | End time not recorded; next step began 17:58, so at most 0.77 h. Found 4 wrong gold labels (empty messages) |
+| 3.11 | Prompt fix (v2 regression → v3) + Haiku→Sonnet routing + temperature fix (Sep 28, 17:58-18:28) | optimization | New | .25 | .33 | .42 | 0.33 | 2.0 | 0.67 | - | - | 0.50 | 1.50 | Eval caught a regression (priority fix broke category); Claude 5 models reject temperature=0 |
+| 3.12 | Prompt trim (v4) + prompt caching (Sep 28, 18:47-18:57) | optimization | New | .17 | .25 | .33 | 0.25 | 2.0 | 0.50 | - | - | 0.17 | 0.67 | Caching inactive below Anthropic's min token threshold - measured quickly, documented in ADR 007 |
+| — | Batch API | optimization | - | - | - | - | - | - | - | - | - | 0 | - | Scoped out by user: live triage can't know priority before extraction |
+| 3.13 | Structured JSON logs (Sep 28, 20:36-20:46) | infra | New | .17 | .25 | .33 | 0.25 | 2.0 | 0.50 | - | - | 0.17 | 0.67 | Found LiteLLM's own logger polluting the JSON stream; quick fix |
+| 3.14 | README + Mermaid diagram + PNG (Sep 28, 20:55-21:02) | docs-video | New | .17 | .25 | .33 | 0.25 | 2.0 | 0.50 | - | - | 0.12 | 0.47 | Local PNG renderer broken (missing Chrome libs); used mermaid.ink instead |
+| 3.15 | Dockerfile, Makefile, GitHub Actions CI (Sep 28, 21:10-21:30) | infra | New | .17 | .25 | .33 | 0.25 | 2.0 | 0.50 | - | - | 0.33 | 1.33 | Container re-synced deps on every start (`uv run`); fixed after running it for real |
+| 3.16 | Demo script, rehearsed live (Sep 28, 21:30-21:39) | docs-video | New | .08 | .17 | .25 | 0.17 | 2.0 | 0.33 | - | - | 0.15 | 0.90 | Rehearsal found the narration was wrong (404 is permanent, 1 try not 4) and root-owned logs/ |
+| — | Unplanned (Sep 28): send_demo PYTHONPATH fix, CI test-isolation bug, full C: drive diagnosis | debugging | - | - | - | - | - | - | - | - | - | not timed | - | No estimate given; environment and test-isolation surprises |
+| 4.1 | Demo runs ×2 (self, then friend) (Sep 29) | docs-video | Seen | .25 | .33 | .42 | 0.33 | 1.5 | 0.50 | - | - | not recorded | - | Times not given; unclear whether the estimate was per run or both. Slack app was offline (not a code issue) |
+| 5.R-T | n8n twin, hand-built: Docker, Google credential, 15-node workflow, error workflow + DLQ tab (Sep 29, 15:07-16:13 + 18:08-19:40) | integration | New | .5 | 1 | 1.5 | 1.00 | 2.0 | 2.00 | - | - | 2.63 | 2.63 | Estimate was for option A (import); user chose B (hand-build) after estimating. Also: Drive API needed for "From list", $env hidden in editor, n8n 2.x publish step |
+| — | Blocked: Anthropic auth outage (`503 credential validation failed`) (Sep 29, from ~19:35) | - | - | - | - | - | - | - | - | - | - | not counted | - | Provider-side; Console itself couldn't authenticate. Replay of 4 failed runs pending |
+| 5.U | n8n export + cleanup + comparison doc (Claude, Sep 29) | docs-video | - | - | - | - | - | - | - | - | - | n/a | - | Claude's work; user reviewed |
 
 **Planned total for A-C: 3.0 h (user). Actual A-C: 1.19 h (0.42 + 0.62 + 0.15).**
 
@@ -52,3 +64,16 @@ At 150% of a task's planned hours: stop, diagnose (scope / tooling / bigger than
   (3) where Claude writes the code, user time understates a solo build. Track solo time separately before quoting.
 - Setup risk not yet met: Google Cloud/OAuth and Slack (tomorrow).
 - Lesson (3.7): a live run with real services is where the biggest overrun and the most valuable finds happened (ratio 4.9). Budget a separate 'live run + fix' task of about 1 h for any integration step; unit tests alone don't show race conditions or library defaults.
+
+## Day 2 summary (Sep 26)
+- Steps: 3.2-3.7 (Google + Slack setup, signed webhook, delivery, retry/DLQ, live wiring).
+- Setup ran close to estimate (3.2 ratio 1.07, 3.3 0.33). The live run (3.7) was the big overrun (4.9) and the biggest find.
+
+## Day 3 summary (Sep 28)
+- Steps: 3.8-3.16. Estimates for 10-25 min steps landed well (most ratios 0.5-1.5).
+- Lessons: (1) evals catch regressions tests can't (v2 prompt); (2) running things for real (Docker, demo) found a bug in almost every step; (3) record the end time before moving on - the evals row is incomplete.
+
+## Day 4 summary (Sep 29)
+- Steps: demo prep + 2 demo runs, n8n twin (hand-built), export + comparison doc.
+- n8n ratio 2.63: the estimate was made for a different approach. Lesson: re-estimate the moment the approach changes, not after.
+- A provider outage blocked testing for part of the day. Lesson for client quotes: third-party outages happen mid-project; name them as a dependency risk in the proposal.
