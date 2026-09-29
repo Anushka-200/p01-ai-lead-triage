@@ -148,3 +148,8 @@ hidden; the top three are the next fixes.
 | 8 | **Not load-tested; single-process shortcuts.** No connection pool, in-process background tasks and Sheets lock | `app/api.py`, `app/sheets.py` | Load test for a real throughput number; queue (Redis/SQS), connection pool, DB as the system of record |
 | 9 | **mypy missing** from the toolchain our standard calls for | Not in `pyproject.toml` or CI | Add mypy (basic mode) to CI |
 | 10 | **Docs gaps.** `LEARNING_LOG.md` covers day 1 only; the demo video is still pending | | Fill the learning log; record the video from `docs/DEMO_SCRIPT.md` |
+
+n8n workflow:
+
+<img width="1549" height="565" alt="image" src="https://github.com/user-attachments/assets/e7d99f5d-3ba4-446c-a901-202aa35ee7a1" />
+
