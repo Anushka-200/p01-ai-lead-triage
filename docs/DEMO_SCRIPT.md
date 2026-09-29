@@ -1,7 +1,8 @@
 # Demo script (3 minutes)
 
-Recording checklist before you start: `docker compose up -d`, Sheet and Slack cleared of old
-test rows, `.env` has real keys, `git log` shows the latest commit.
+Recording checklist before you start: `docker compose up -d postgres`, then `make reset-demo`
+(clears the database AND the Sheet together), `.env` has real keys. Run `make reset-demo` again
+between demo runs, or the second run treats Raj as a duplicate.
 
 ## 1. Problem (15s)
 
@@ -34,12 +35,13 @@ two); the refund/complaint message is held, **not** auto-sent — open the dashb
 **One failure, handled (55s) — verified live, not scripted from memory:**
 > "Here's what happens when something breaks. I'll point Slack at a bad URL and restart."
 ```bash
-# temporarily break SLACK_WEBHOOK_URL in .env, restart the server, then send one hot lead
+cp .env .env.bak                                   # keep the real Slack URL safe
+sed -i 's#^SLACK_WEBHOOK_URL=.*#SLACK_WEBHOOK_URL=https://hooks.slack.com/services/BROKEN/X/Y#' .env
+# terminal 1: Ctrl+C the server, then start it again so it reads the broken URL
 uv run uvicorn app.api:app --port 8000
-```
-Send Raj's hot-lead message again (from `scripts/send_demo.py` or the webhook directly). Then:
-```bash
-uv run python -m app.dlq_cli list
+# terminal 2: a NEW hot lead (a resent Raj would just be skipped as already delivered)
+uv run python scripts/send_demo.py --hot-lead
+uv run python -m app.dlq_cli list                  # or the dashboard's DLQ tab
 ```
 > "It's on the shelf after just one attempt, not four — a bad URL is a *permanent* problem, so
 > retrying it can't help. My retry logic knows the difference: it only retries *temporary*
@@ -47,9 +49,11 @@ uv run python -m app.dlq_cli list
 > it doesn't waste time. Real transient failures — Slack rate-limited, a network blip — do get
 > the full retry-with-backoff treatment first; you can see that split in `app/retry.py`."
 
-Fix the URL back, then:
+Fix the URL back, then replay (use the `#id` that `list` printed):
 ```bash
-uv run python -m app.dlq_cli replay 1
+cp .env.bak .env                                   # real Slack URL restored
+uv run python -m app.dlq_cli replay <id>           # reads the fixed .env itself
+# then Ctrl+C and restart the server too, so new messages use the fixed URL
 ```
 > "It resumes exactly where it stopped — the Sheet row was already written before Slack failed,
 > so replay only re-sends the missing Slack alert, no duplicate row, and it didn't need to ask
@@ -67,7 +71,7 @@ Show the final row of `docs/benchmarks.md` on screen:
 
 ## 5. Close (10s)
 
-> "Code's on GitHub, link below — including the ADRs behind every decision, 135 automated
+> "Code's on GitHub, link below — including the ADRs behind every decision, 136 automated
 > tests, and the full benchmark history. Also built as an n8n workflow for comparison. Happy to
 > walk through the reliability details on a call."
 

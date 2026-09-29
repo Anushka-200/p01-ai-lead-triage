@@ -10,3 +10,4 @@ service-account*.json
 *.log
 secrets/
 logs/
+.env.bak

@@ -1,4 +1,4 @@
-.PHONY: setup test lint eval bench demo up down logs
+.PHONY: setup test lint eval bench demo reset-demo up down logs
 
 setup:  ## Install deps and start Postgres
 	uv sync
@@ -17,9 +17,11 @@ eval:  ## Run the labeled eval set against the real API (~$0.15, ~2 min) and app
 bench:  ## Show all logged benchmark runs so far
 	@cat docs/benchmarks.md
 
-demo:  ## Start the webhook server, then send signed demo messages to it
-	@echo "In another terminal: uv run uvicorn app.api:app --port 8000"
-	PYTHONPATH=. uv run python scripts/send_demo.py
+demo:  ## Send the signed demo batch (start the server first: uv run uvicorn app.api:app --port 8000)
+	uv run python scripts/send_demo.py
+
+reset-demo:  ## Wipe demo data: database AND Sheet rows together (see scripts/reset_demo.py)
+	uv run python scripts/reset_demo.py --yes
 
 up:  ## Build and run the whole stack (app + Postgres) in Docker
 	docker compose up --build
